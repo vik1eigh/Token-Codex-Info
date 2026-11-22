@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Keep your Codex usage limits in sight. Token Codex Info is a lightweight, local macOS menu bar app with remaining usage and reset times.">
+  <meta name="theme-color" content="#f7f9f8">
+  <title>Token Codex Info — Your limits, a glance away.</title>
+  <link rel="icon" href="assets/app-icon.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="page.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="nav wrap">
+    <a class="brand" href="#" aria-label="Token Codex Info home"><img src="assets/app-icon.png" alt="" width="38" height="38"><span>Token Codex Info</span></a>
+    <nav aria-label="Main navigation"><a href="#how-it-works">The app</a><a href="#install">Installation</a><a class="nav-download" href="#download">Get the app</a></nav>
+  </header>
+  <main id="main">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">A SMALL UTILITY FOR YOUR MAC</p>
+        <h1 id="hero-title">Your limits.<br>A glance <span>away.</span></h1>
+        <p class="intro">Keep your Codex usage in sight, without breaking your flow. Remaining usage and reset times, right in your menu bar.</p>
+        <a class="button download" href="downloads/TokenCodexInfo-universal.dmg" download><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5"/></svg>Download for macOS</a>
+        <p class="compatibility">macOS 14+ <span>·</span> Apple Silicon &amp; Intel <span>·</span> <span data-version>Version 1.0.0</span></p>
+      </div>
+      <div class="desktop" role="img" aria-label="Illustrative preview of Token Codex Info in the macOS menu bar, showing 83 percent remaining and a reset countdown of 2 hours 14 minutes.">
+        <div class="menu-bar"><span class="apple">●</span><b>Finder</b><span>File</span><span>Edit</span><span>View</span><div class="menu-spacer"></div><span class="usage">83% · 2:14</span><span class="system-time">Sun 9:41</span></div>
+        <div class="app-menu"><div class="source-label">Reported limits</div><div>Data &amp; Settings…</div><hr><div>✓ <span>Launch at Login</span></div><hr><div><span class="indent">Refresh</span></div><hr><div><span class="indent">Quit</span></div></div>
+        <div class="wallpaper-word">A little<br>more <em>clarity.</em></div>
+        <div class="desktop-caption"><span>83% left to use</span><span>Resets in 2h 14m</span></div>
+        <span class="preview-label">Illustrative preview</span>
+      </div>
+    </section>
+    <div class="benefit-strip wrap"><p>Built for the menu bar.</p><p>Reads local Codex data.</p><p>No API key needed.</p></div>
+    <section id="how-it-works" class="details wrap" aria-labelledby="details-title">
+      <div><p class="eyebrow">LESS CHECKING. MORE CREATING.</p><h2 id="details-title">Know where<br>you stand.</h2><p class="section-intro">A quiet companion for your Codex sessions. The information you need, in the corner of your screen.</p></div>
+      <div class="feature-list">
+        <article><span class="feature-symbol" aria-hidden="true">%</span><div><h3>Usage you can read at a glance</h3><p>See your remaining allowance as a percentage. When the five-hour window is available, a countdown tells you when it resets.</p></div></article>
+        <article><span class="feature-symbol calendar" aria-hidden="true">↻</span><div><h3>The right window, automatically</h3><p>If Codex only provides a weekly limit, the app shows your weekly allowance and reset date instead.</p></div></article>
+        <article><span class="feature-symbol" aria-hidden="true">⌘</span><div><h3>Feels at home on your Mac</h3><p>A native menu bar app with Launch at Login, a manual refresh, and no extra window to keep open.</p></div></article>
+      </div>
+    </section>
+    <section id="install" class="installation" aria-labelledby="install-title">
+      <div class="wrap install-layout">
+        <div class="install-copy"><p class="eyebrow">THE FAMILIAR MAC WAY</p><h2 id="install-title">One drag.<br>Ready to go.</h2><p class="section-intro">Download the disk image, open it, and drag Token Codex Info into Applications. Then launch it from there. The first-run checker helps you connect your local Codex data.</p><button id="replay" class="text-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 8M4 4v6h6"/></svg>Replay installation</button><p class="demo-note">Installation preview. Install the app in the downloaded DMG.</p></div>
+        <div class="installer" aria-label="Animation showing the app moving into the Applications folder">
+          <div class="window-title"><div class="traffic" aria-hidden="true"><i></i><i></i><i></i></div><span>Token Codex Info</span></div>
+          <div class="installer-content"><p class="installer-heading">Drag to install.</p><p class="installer-subtitle">A small app. A familiar gesture.</p>
+            <div class="drag-scene"><div class="install-item"><img src="assets/app-icon.png" width="92" height="92" alt="Token Codex Info app icon"><span>Token Codex Info</span></div><svg class="transfer-arrow" viewBox="0 0 100 40" aria-hidden="true"><path d="M4 20h86M76 6l14 14-14 14"/></svg><div class="install-item destination"><svg class="folder" viewBox="0 0 110 100" aria-hidden="true"><path fill="#75c4ed" d="M6 19a8 8 0 0 1 8-8h28l12 12h43a8 8 0 0 1 8 8v53H6z"/><rect fill="#90d5f6" x="4" y="27" width="103" height="63" rx="8"/><path d="m44 74 12-29 12 29M41 65h31" stroke="#448db6" stroke-width="4" fill="none" stroke-linecap="round"/></svg><span>Applications</span></div><div class="drag-ghost" aria-hidden="true"><img src="assets/app-icon.png" alt="" width="70" height="70"><svg class="cursor" viewBox="0 0 24 28"><path d="m3 2 17 16-8 1-4 7z" fill="#172024" stroke="white" stroke-width="2"/></svg></div></div>
+            <p class="install-result" aria-live="polite">Then open the app from Applications.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="practical wrap" aria-labelledby="practical-title"><div><p class="eyebrow">GOOD TO KNOW</p><h2 id="practical-title">Small app.<br>Clear expectations.</h2></div><div class="faq">
+      <details open><summary>Where does the usage data come from?</summary><p>The app reads Codex session files and databases already on your Mac. It does not make network requests or ask for an API key. Use Codex on the same Mac to keep those snapshots up to date.</p></details>
+      <details><summary>Is the usage always live?</summary><p>Usage updates when Codex writes a new local snapshot. If precise limits are unavailable, the app may fall back to token-based estimates. Estimates are marked ≈. If data is missing or access is denied, the app shows a clear status instead of 100%. Open Data &amp; Settings to choose a folder or check again.</p></details>
+      <details><summary>What if macOS asks for permission to open it?</summary><p>The current build is ad-hoc signed and has not been notarized by Apple. After trying to open a build you trust, go to System Settings → Privacy &amp; Security and choose Open Anyway if offered. No security settings need to be disabled.</p></details>
+      <details><summary>Is this an official OpenAI app?</summary><p>No. Token Codex Info is an independent utility by vik1eigh. It is not affiliated with or endorsed by OpenAI.</p></details>
+    </div></section>
+    <section id="download" class="download-section wrap" aria-labelledby="download-title"><img src="assets/app-icon.png" width="84" height="84" alt=""><p class="eyebrow">BACK TO YOUR FLOW</p><h2 id="download-title">Keep your limits in sight.</h2><p>One small addition to your menu bar.</p><a class="button download" href="downloads/TokenCodexInfo-universal.dmg" download>Download for macOS</a><p class="compatibility">macOS 14 Sonoma or later · Universal app</p><div class="secondary-downloads"><a href="downloads/TokenCodexInfo-universal.zip" download>Download ZIP</a><a href="downloads/SHA256SUMS.txt">Verify checksums</a></div></section>
+  </main>
+  <footer class="wrap"><span>Token Codex Info <span class="footer-by">by vik1eigh</span></span><span>Made for a little more focus.</span><a href="https://github.com/vik1eigh">More from the developer</a></footer>
+</body>
+</html>
