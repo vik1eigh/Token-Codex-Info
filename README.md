@@ -112,3 +112,8 @@ without exposing the private repository's release URLs.
 The repository's GitHub plan must support Pages for its selected visibility.
 The same `dist/TokenCodexInfo-download-page.zip` can also be hosted on any
 static web host. No backend or third-party fonts are required.
+
+## Sponsor this project
+
+If Token Codex Info helps you stay in your flow, you can support its development
+on [Buy Me a Coffee](https://buymeacoffee.com/vikleigh).
