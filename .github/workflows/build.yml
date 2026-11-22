@@ -1,0 +1,34 @@
+name: Build and test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Run tests
+        run: swift test
+      - name: Package universal macOS app
+        run: bash ./script/package_dmg.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TokenCodexInfo-macOS-universal
+          path: |
+            dist/TokenCodexInfo-*-universal.dmg
+            dist/TokenCodexInfo-*-universal.zip
+            dist/SHA256SUMS.txt
+            dist/TokenCodexInfo-download-page.zip
+          if-no-files-found: error
