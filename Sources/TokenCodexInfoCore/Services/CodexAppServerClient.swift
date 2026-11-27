@@ -93,7 +93,7 @@ private final class RateLimitRPCSession: @unchecked Sendable {
 
     func start() throws {
         try send(["id": 1, "method": "initialize", "params": [
-            "clientInfo": ["name": "token_codex_info", "title": "Token Codex Info", "version": "1.0.2"]
+            "clientInfo": ["name": "token_codex_info", "title": "Token Codex Info", "version": "1.0.3"]
         ]])
     }
 
@@ -179,12 +179,23 @@ private final class RateLimitRPCSession: @unchecked Sendable {
 enum CodexExecutableLocator {
     static func locate() -> URL? {
         let home = FileManager.default.homeDirectoryForCurrentUser
-        var apps = [URL(fileURLWithPath: "/Applications/Codex.app"), home.appendingPathComponent("Applications/Codex.app")]
+        var apps = [URL(fileURLWithPath: "/Applications/Codex.app"), home.appendingPathComponent("Applications/Codex.app"),
+                    URL(fileURLWithPath: "/Applications/ChatGPT.app"), home.appendingPathComponent("Applications/ChatGPT.app")]
         if let registered = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.openai.codex") { apps.insert(registered, at: 0) }
-        var candidates = apps.flatMap { [$0.appendingPathComponent("Contents/Resources/codex"), $0.appendingPathComponent("Contents/Resources/bin/codex")] }
         let paths = ["/opt/homebrew/bin", "/usr/local/bin", home.appendingPathComponent(".local/bin").path]
             + (ProcessInfo.processInfo.environment["PATH"] ?? "").split(separator: ":").map(String.init)
-        candidates += paths.map { URL(fileURLWithPath: $0).appendingPathComponent("codex") }
+        return locate(applications: apps, searchPaths: paths.map { URL(fileURLWithPath: $0) })
+    }
+
+    static func locate(applications: [URL], searchPaths: [URL]) -> URL? {
+        let bundledPaths = [
+            "Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex",
+            "Contents/Resources/codex-cli/bin/codex",
+            "Contents/Resources/codex",
+            "Contents/Resources/bin/codex"
+        ]
+        var candidates = applications.flatMap { app in bundledPaths.map { app.appendingPathComponent($0) } }
+        candidates += searchPaths.map { $0.appendingPathComponent("codex") }
         for candidate in candidates where FileManager.default.isExecutableFile(atPath: candidate.path) {
             let resolved = candidate.resolvingSymlinksInPath()
             if resolved.pathExtension != "js" { return resolved }
