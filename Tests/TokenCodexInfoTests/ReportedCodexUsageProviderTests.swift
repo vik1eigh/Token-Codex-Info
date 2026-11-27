@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import XCTest
 @testable import TokenCodexInfoCore
@@ -77,6 +78,21 @@ final class ReportedCodexUsageProviderTests: XCTestCase {
         XCTAssertTrue(snapshot.hasData)
         XCTAssertFalse(snapshot.menuBarTitleParts(now: Date()).stringValue.contains("≈"))
         print("Live account check: \(snapshot.menuBarWindow.remainingPercent)% remaining (\(snapshot.menuBarWindowName))")
+    }
+
+    func testRealDesktopBundleReturnsLimitsWithoutASeparateCli() throws {
+        guard ProcessInfo.processInfo.environment["TOKEN_CODEX_RUN_LIVE_TEST"] == "1" else {
+            throw XCTSkip("Opt-in desktop account integration test")
+        }
+        let app = try XCTUnwrap(NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.openai.codex"))
+        let executable = try XCTUnwrap(CodexExecutableLocator.locate(applications: [app], searchPaths: []))
+        XCTAssertTrue(executable.path.hasPrefix(app.path + "/"))
+        let settings = UsageSettings(codexHomePath: "~/.codex", fiveHourTokenLimit: 1, refreshIntervalSeconds: 60)
+        let snapshot = ReportedCodexUsageProvider(client: CodexAppServerClient(executableURL: executable))
+            .loadUsage(settings: settings, now: Date())
+        XCTAssertEqual(snapshot.source, .liveRateLimits)
+        XCTAssertTrue(snapshot.hasData)
+        print("Bundled desktop check without CLI search: \(snapshot.menuBarWindow.remainingPercent)% remaining (\(snapshot.menuBarWindowName))")
     }
 }
 
