@@ -185,7 +185,8 @@ public struct UsageSnapshot: Equatable, Sendable {
     public var statusMessage: String {
         guard hasData else { return (issue ?? .noUsageData).message }
         if source.isEstimate {
-            return "Approximate usage based on local token activity and the limits below. Codex has not provided a current rate-limit snapshot."
+            let windowMessage = fiveHour.isAvailable ? "" : "No token activity was found in the last five hours; showing a weekly estimate. "
+            return windowMessage + "No current reported limits were found in this folder. Estimates use local token activity and the limits below, and may miss usage on other Macs. Run a prompt in Codex, then click Check Again to look for updated limits."
         }
         return "Read from a local Codex rate-limit snapshot. Updates when Codex writes new data."
     }
