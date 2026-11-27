@@ -1,6 +1,7 @@
 import Foundation
 
 public enum UsageDataSource: String, Equatable, Sendable {
+    case liveRateLimits
     case rateLimits
     case logs
     case threadsEstimate
@@ -12,7 +13,7 @@ public enum UsageDataSource: String, Equatable, Sendable {
 }
 
 public enum CodexDataIssue: String, Equatable, Sendable {
-    case checking, folderMissing, notDirectory, accessDenied, noUsageData, readFailed
+    case checking, folderMissing, notDirectory, accessDenied, noUsageData, readFailed, codexUnavailable, liveRequestFailed
 
     public var title: String {
         switch self {
@@ -20,8 +21,10 @@ public enum CodexDataIssue: String, Equatable, Sendable {
         case .folderMissing: return "Codex folder not found"
         case .notDirectory: return "Choose a folder"
         case .accessDenied: return "Access to Codex data denied"
-        case .noUsageData: return "No usage data yet"
+        case .noUsageData: return "Reported limits unavailable"
         case .readFailed: return "Unable to read Codex data"
+        case .codexUnavailable: return "Codex executable not found"
+        case .liveRequestFailed: return "Unable to refresh account limits"
         }
     }
 
@@ -31,8 +34,10 @@ public enum CodexDataIssue: String, Equatable, Sendable {
         case .folderMissing: return "Open Codex and start a session on this Mac, or choose your Codex data folder below."
         case .notDirectory: return "The selected path is a file. Choose the Codex data folder, usually ~/.codex."
         case .accessDenied: return "The app could not read the selected folder or its usage files. Choose the folder again to allow access, or check its permissions."
-        case .noUsageData: return "The folder is accessible, but no usable limits or token activity were found. Run a session in Codex, then check again."
+        case .noUsageData: return "No current reported account limits are available. Token activity cannot determine your account allowance. Open Codex on this Mac, check your sign-in, then try again."
         case .readFailed: return "The folder exists, but its usage files could not be read. Check again after Codex finishes writing, or choose another folder."
+        case .codexUnavailable: return "Install the Codex desktop app or Codex CLI on this Mac and sign in, then check again. No current local limit snapshot is available."
+        case .liveRequestFailed: return "Codex could not return current account limits. Check the Codex sign-in and internet connection on this Mac, then try again. No token-based percentage is substituted."
         }
     }
 
@@ -41,8 +46,10 @@ public enum CodexDataIssue: String, Equatable, Sendable {
         case .checking: return "Checking"
         case .folderMissing, .notDirectory: return "Setup"
         case .accessDenied: return "No access"
-        case .noUsageData: return "No data"
+        case .noUsageData: return "No limits"
         case .readFailed: return "Read error"
+        case .codexUnavailable: return "Setup"
+        case .liveRequestFailed: return "Offline"
         }
     }
 }
@@ -174,20 +181,17 @@ public struct UsageSnapshot: Equatable, Sendable {
     }
 
     public var hasData: Bool {
-        source != .unavailable && (fiveHour.isAvailable || weekly.isAvailable)
+        (source == .rateLimits || source == .liveRateLimits) && (fiveHour.isAvailable || weekly.isAvailable)
     }
 
     public var statusTitle: String {
         guard hasData else { return (issue ?? .noUsageData).title }
-        return source.isEstimate ? "Estimated usage" : "Reported limits"
+        return source == .liveRateLimits ? "Live limits" : "Reported limits"
     }
 
     public var statusMessage: String {
         guard hasData else { return (issue ?? .noUsageData).message }
-        if source.isEstimate {
-            let windowMessage = fiveHour.isAvailable ? "" : "No token activity was found in the last five hours; showing a weekly estimate. "
-            return windowMessage + "No current reported limits were found in this folder. Estimates use local token activity and the limits below, and may miss usage on other Macs. Run a prompt in Codex, then click Check Again to look for updated limits."
-        }
+        if source == .liveRateLimits { return "Fetched from your account through the installed Codex app server. Codex uses its existing sign-in to contact OpenAI. Local token counts are never converted into an account limit." }
         return "Read from a local Codex rate-limit snapshot. Updates when Codex writes new data."
     }
 
