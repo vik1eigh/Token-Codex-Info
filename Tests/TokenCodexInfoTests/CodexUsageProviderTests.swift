@@ -99,6 +99,40 @@ final class CodexUsageProviderTests: XCTestCase {
         XCTAssertTrue(snapshot.menuBarTitleParts(now: now).stringValue.hasPrefix("≈100%"))
     }
 
+    func testOlderLogActivityDoesNotInventAFullFiveHourAllowance() throws {
+        let home = try TemporaryCodexHome()
+        let now = Date(timeIntervalSince1970: 100_000)
+        try home.createLogsDatabase(rows: [
+            (80_000, "post sampling token usage turn_id=older-turn total_usage_tokens=400")
+        ])
+
+        let snapshot = CodexUsageProvider().loadUsage(settings: settings(home), now: now)
+
+        XCTAssertEqual(snapshot.source, .logs)
+        XCTAssertFalse(snapshot.fiveHour.isAvailable)
+        XCTAssertTrue(snapshot.weekly.isAvailable)
+        XCTAssertEqual(snapshot.menuBarWindowName, "weekly")
+        XCTAssertEqual(snapshot.menuBarWindow.remainingPercent, 80)
+        XCTAssertEqual(snapshot.menuBarWindow.resetAt, Date(timeIntervalSince1970: 684_800))
+        XCTAssertTrue(snapshot.menuBarTitleParts(now: now).stringValue.hasPrefix("≈80%"))
+        XCTAssertFalse(snapshot.menuBarTitleParts(now: now).stringValue.contains("--"))
+    }
+
+    func testOlderThreadActivityDoesNotInventAFullFiveHourAllowance() throws {
+        let home = try TemporaryCodexHome()
+        let now = Date(timeIntervalSince1970: 100_000)
+        try home.createStateDatabase(rows: [(80_000, 0, 400)])
+
+        let snapshot = CodexUsageProvider().loadUsage(settings: settings(home), now: now)
+
+        XCTAssertEqual(snapshot.source, .threadsEstimate)
+        XCTAssertFalse(snapshot.fiveHour.isAvailable)
+        XCTAssertTrue(snapshot.weekly.isAvailable)
+        XCTAssertEqual(snapshot.menuBarWindowName, "weekly")
+        XCTAssertEqual(snapshot.menuBarWindow.remainingPercent, 80)
+        XCTAssertEqual(snapshot.menuBarWindow.resetAt, Date(timeIntervalSince1970: 684_800))
+    }
+
     func testUsesPayloadCodexSessionRateLimitsBeforeSQLiteEstimates() throws {
         let codexHome = try TemporaryCodexHome()
         let now = Date(timeIntervalSince1970: 20_000)
