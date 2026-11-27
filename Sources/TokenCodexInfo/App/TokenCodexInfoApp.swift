@@ -5,7 +5,7 @@ import TokenCodexInfoCore
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let settings = SettingsStore()
-    let usageModel = UsageViewModel(provider: CodexUsageProvider())
+    let usageModel = UsageViewModel(provider: ReportedCodexUsageProvider())
     let loginItems = LoginItemController()
     private var statusItemController: StatusItemController?
     private var settingsWindowController: DataSettingsWindowController?
