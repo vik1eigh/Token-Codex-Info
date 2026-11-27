@@ -39,12 +39,6 @@ public final class CodexUsageProvider: UsageProviding, @unchecked Sendable {
         if FileManager.default.fileExists(atPath: home.appendingPathComponent("logs_2.sqlite").path) {
             do {
                 if let snapshot = try loadFromRateLimitEvents(settings: settings, now: now) { return snapshot }
-                if let snapshot = try loadFromLogs(settings: settings, now: now) { return snapshot }
-            } catch { failures.append(error) }
-        }
-        if FileManager.default.fileExists(atPath: home.appendingPathComponent("state_5.sqlite").path) {
-            do {
-                if let snapshot = try loadFromThreads(settings: settings, now: now) { return snapshot }
             } catch { failures.append(error) }
         }
 
@@ -196,160 +190,6 @@ public final class CodexUsageProvider: UsageProviding, @unchecked Sendable {
         return nil
     }
 
-    private func loadFromLogs(settings: UsageSettings, now: Date) throws -> UsageSnapshot? {
-        let dbPath = settings.expandedCodexHomeURL.appendingPathComponent("logs_2.sqlite").path
-        let since = Int(now.addingTimeInterval(-settings.weeklyWindowSeconds).timeIntervalSince1970)
-        let query = """
-        SELECT ts, replace(replace(feedback_log_body, char(10), ' '), char(13), ' ')
-        FROM logs
-        WHERE ts >= \(since)
-          AND feedback_log_body LIKE '%post sampling token usage%'
-        ORDER BY ts ASC;
-        """
-
-        let output = try sqlite.runReadOnlyQuery(databasePath: dbPath, query: query)
-        let events = output
-            .split(whereSeparator: \.isNewline)
-            .compactMap { LogUsageEvent(line: String($0), separator: SQLiteClientConstants.fieldSeparator) }
-            .map(\.event)
-
-        return snapshot(from: deduplicated(events: events), settings: settings, now: now, source: .logs)
-    }
-
-    private func loadFromThreads(settings: UsageSettings, now: Date) throws -> UsageSnapshot? {
-        let dbPath = settings.expandedCodexHomeURL.appendingPathComponent("state_5.sqlite").path
-        let since = Int(now.addingTimeInterval(-settings.weeklyWindowSeconds).timeIntervalSince1970)
-        let query = """
-        SELECT (CASE
-                WHEN updated_at > 0 THEN updated_at
-                WHEN updated_at_ms > 0 THEN updated_at_ms / 1000
-                ELSE 0
-              END), tokens_used
-        FROM threads
-        WHERE (CASE
-                WHEN updated_at > 0 THEN updated_at
-                WHEN updated_at_ms > 0 THEN updated_at_ms / 1000
-                ELSE 0
-              END) >= \(since)
-          AND tokens_used > 0
-        ORDER BY 1 ASC;
-        """
-
-        let output = try sqlite.runReadOnlyQuery(databasePath: dbPath, query: query)
-        let events = output
-            .split(whereSeparator: \.isNewline)
-            .compactMap { ThreadUsageEvent(line: String($0), separator: SQLiteClientConstants.fieldSeparator) }
-
-        return snapshot(
-            from: events.map { UsageEvent(timestamp: $0.timestamp, turnID: $0.threadID, tokens: $0.tokens) },
-            settings: settings,
-            now: now,
-            source: .threadsEstimate,
-            errorMessage: "Using thread estimate; logs unavailable."
-        )
-    }
-
-    private func deduplicated(events: [UsageEvent]) -> [UsageEvent] {
-        var latestByTurn: [String: UsageEvent] = [:]
-
-        for event in events {
-            guard let existing = latestByTurn[event.turnID] else {
-                latestByTurn[event.turnID] = event
-                continue
-            }
-
-            if event.timestamp > existing.timestamp || (event.timestamp == existing.timestamp && event.tokens > existing.tokens) {
-                latestByTurn[event.turnID] = event
-            }
-        }
-
-        return latestByTurn.values.sorted { $0.timestamp < $1.timestamp }
-    }
-
-    private func snapshot(
-        from events: [UsageEvent],
-        settings: UsageSettings,
-        now: Date,
-        source: UsageDataSource,
-        errorMessage: String? = nil
-    ) -> UsageSnapshot? {
-        let fiveHourWindowStart = now.addingTimeInterval(-settings.windowSeconds)
-        let fiveHourEvents = events.filter { $0.timestamp >= fiveHourWindowStart }
-        let weeklyWindowStart = now.addingTimeInterval(-settings.weeklyWindowSeconds)
-        let weeklyEvents = events.filter { $0.timestamp >= weeklyWindowStart }
-        guard !weeklyEvents.isEmpty else { return nil }
-
-        let usedTokens = fiveHourEvents.reduce(0) { $0 + $1.tokens }
-        let oldest = fiveHourEvents.map(\.timestamp).min()
-        let resetAt = oldest?.addingTimeInterval(settings.windowSeconds)
-
-        let weeklyUsedTokens = weeklyEvents.reduce(0) { $0 + $1.tokens }
-        let weeklyOldest = weeklyEvents.map(\.timestamp).min()
-        let weeklyResetAt = weeklyOldest?.addingTimeInterval(settings.weeklyWindowSeconds)
-
-        return UsageSnapshot(
-            usedTokens: usedTokens,
-            limitTokens: settings.fiveHourTokenLimit,
-            resetAt: resetAt,
-            weeklyUsedTokens: weeklyUsedTokens,
-            weeklyLimitTokens: settings.weeklyTokenLimit,
-            weeklyResetAt: weeklyResetAt,
-            observedAt: now,
-            source: source,
-            errorMessage: errorMessage,
-            // Older weekly activity says nothing about the current five-hour
-            // allowance. Let the UI use the weekly estimate in that case.
-            fiveHourIsAvailable: !fiveHourEvents.isEmpty,
-            weeklyIsAvailable: true
-        )
-    }
-}
-
-private struct UsageEvent: Equatable {
-    var timestamp: Date
-    var turnID: String
-    var tokens: Int
-}
-
-private struct LogUsageEvent {
-    private static let turnIDPattern = #"turn_id=([A-Za-z0-9_-]+)"#
-    private static let tokenPattern = #"total_usage_tokens=([0-9]+)"#
-
-    init?(line: String, separator: Character) {
-        let parts = line.split(separator: separator, maxSplits: 1).map(String.init)
-        guard parts.count == 2,
-              let timestamp = TimeInterval(parts[0]),
-              let turnID = parts[1].firstMatch(pattern: Self.turnIDPattern),
-              let tokenText = parts[1].firstMatch(pattern: Self.tokenPattern),
-              let tokens = Int(tokenText)
-        else {
-            return nil
-        }
-
-        event = UsageEvent(timestamp: Date(timeIntervalSince1970: timestamp), turnID: turnID, tokens: tokens)
-    }
-
-    var event: UsageEvent
-}
-
-private struct ThreadUsageEvent {
-    init?(line: String, separator: Character) {
-        let parts = line.split(separator: separator, maxSplits: 1).map(String.init)
-        guard parts.count == 2,
-              let timestamp = TimeInterval(parts[0]),
-              let tokens = Int(parts[1])
-        else {
-            return nil
-        }
-
-        self.timestamp = Date(timeIntervalSince1970: timestamp)
-        self.tokens = tokens
-        self.threadID = parts[0]
-    }
-
-    var timestamp: Date
-    var threadID: String
-    var tokens: Int
 }
 
 private struct CodexRateLimitsEvent: Decodable {
@@ -382,15 +222,24 @@ private struct CodexSessionEvent: Decodable {
     }
 }
 
-private struct CodexSessionRateLimits: Decodable {
+struct CodexSessionRateLimits: Decodable {
     var limitID: String?
     var primary: CodexRateLimitWindow?
     var secondary: CodexRateLimitWindow?
 
     private enum CodingKeys: String, CodingKey {
         case limitID = "limit_id"
+        case liveLimitID = "limitId"
         case primary
         case secondary
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        limitID = try container.decodeIfPresent(String.self, forKey: .limitID)
+            ?? container.decodeIfPresent(String.self, forKey: .liveLimitID)
+        primary = try container.decodeIfPresent(CodexRateLimitWindow.self, forKey: .primary)
+        secondary = try container.decodeIfPresent(CodexRateLimitWindow.self, forKey: .secondary)
     }
 
     func snapshot(now: Date) -> UsageSnapshot? {
@@ -403,7 +252,7 @@ private struct CodexSessionRateLimits: Decodable {
     }
 }
 
-private struct CodexRateLimitWindows: Decodable {
+struct CodexRateLimitWindows: Decodable {
     var primary: CodexRateLimitWindow?
     var secondary: CodexRateLimitWindow?
 
@@ -475,13 +324,16 @@ private struct CodexRateLimitWindows: Decodable {
     }
 }
 
-private struct CodexRateLimitWindow: Decodable {
+struct CodexRateLimitWindow: Decodable {
     var usedPercent: Double
     var resetAt: TimeInterval?
     var windowMinutes: Double?
 
     private enum CodingKeys: String, CodingKey {
         case usedPercent = "used_percent"
+        case liveUsedPercent = "usedPercent"
+        case liveWindowMinutes = "windowDurationMins"
+        case liveResetsAt = "resetsAt"
         case windowMinutes = "window_minutes"
         case resetAt = "reset_at"
         case resetsAt = "resets_at"
@@ -489,10 +341,16 @@ private struct CodexRateLimitWindow: Decodable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        usedPercent = try container.decode(Double.self, forKey: .usedPercent)
+        usedPercent = try container.decodeIfPresent(Double.self, forKey: .usedPercent)
+            ?? container.decode(Double.self, forKey: .liveUsedPercent)
+        guard usedPercent.isFinite, (0...100).contains(usedPercent) else {
+            throw DecodingError.dataCorruptedError(forKey: .usedPercent, in: container, debugDescription: "Invalid reported usage percentage")
+        }
         windowMinutes = try container.decodeIfPresent(Double.self, forKey: .windowMinutes)
+            ?? container.decodeIfPresent(Double.self, forKey: .liveWindowMinutes)
         resetAt = try container.decodeIfPresent(TimeInterval.self, forKey: .resetAt)
             ?? container.decodeIfPresent(TimeInterval.self, forKey: .resetsAt)
+            ?? container.decodeIfPresent(TimeInterval.self, forKey: .liveResetsAt)
     }
 
     var resetDate: Date? {
@@ -522,22 +380,6 @@ private struct CodexRateLimitWindow: Decodable {
 }
 
 private extension String {
-    func firstMatch(pattern: String) -> String? {
-        guard let regex = try? NSRegularExpression(pattern: pattern) else {
-            return nil
-        }
-
-        let range = NSRange(startIndex..<endIndex, in: self)
-        guard let match = regex.firstMatch(in: self, range: range),
-              match.numberOfRanges > 1,
-              let captureRange = Range(match.range(at: 1), in: self)
-        else {
-            return nil
-        }
-
-        return String(self[captureRange])
-    }
-
     func codexRateLimitsJSON() -> String? {
         guard let start = range(of: #"{"type":"codex.rate_limits""#)?.lowerBound else {
             return nil
