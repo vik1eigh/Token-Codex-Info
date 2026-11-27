@@ -45,6 +45,13 @@ Examples:
 3. Prefer `rateLimitsByLimitId.codex` to the backward-compatible single bucket.
 4. Decode reported `usedPercent`, `windowDurationMins`, and `resetsAt` fields.
 
+Version 1.0.3 also supports the current desktop bundle layout,
+`Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex`, its `bin/codex`
+wrapper, and applications registered under a renamed bundle such as ChatGPT.app.
+The older `Contents/Resources/codex` layout remains supported. Locator tests
+exclude CLI search paths, and an opt-in integration test queries the real
+desktop-bundled executable without using Homebrew.
+
 Only quota fields leave the RPC transport. Account IDs, credit details, unrelated
 fields, and raw errors are discarded. There are no credential exports, agent
 turns, workspace requests, app-server stdout/stderr files, or third-party calls.
@@ -60,7 +67,7 @@ When only a weekly window is reported, its percentage and reset date are shown.
 Expired windows are unavailable. Invalid or unrelated quota buckets do not
 produce an account percentage.
 
-Token-based quota estimates were removed in the 1.0.2 candidate. Version 1.0.1
+Token-based quota estimates are removed in the 1.0.3 release. Version 1.0.1
 incorrectly displayed a weekly token estimate when five-hour activity was absent;
 large historical thread totals could then imply an exhausted quota. Token counts
 cannot establish an account allowance or an actual reset time. Tests cover zero,
@@ -116,8 +123,8 @@ bash ./script/package_dmg.sh
 This builds a universal release binary, verifies both CPU architectures,
 packages and ad-hoc signs `dist/Token Codex Info.app`, and produces:
 
-- `dist/TokenCodexInfo-1.0.0-universal.dmg`
-- `dist/TokenCodexInfo-1.0.0-universal.zip`
+- `dist/TokenCodexInfo-1.0.3-universal.dmg`
+- `dist/TokenCodexInfo-1.0.3-universal.zip`
 - `dist/SHA256SUMS.txt`
 
 Set `VERSION` and `BUILD_NUMBER` for a different release:
@@ -135,8 +142,8 @@ the successful run's **Artifacts** section.
 To prepare a release after publishing the repository:
 
 ```sh
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.0.3
+git push origin v1.0.3
 ```
 
 The tag workflow tests and packages the app, then creates a **draft** GitHub

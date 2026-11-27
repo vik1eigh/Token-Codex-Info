@@ -12,14 +12,14 @@
 </p>
 
 <p align="center">
-  <a href="../../releases/tag/v1.0.2"><strong>Download 1.0.2 candidate for macOS</strong></a>
+  <a href="../../releases/latest"><strong>Download for macOS</strong></a>
   · macOS 14 Sonoma or later · Apple Silicon &amp; Intel
 </p>
 
 > [!WARNING]
 > Versions 1.0.0 and 1.0.1 can show unreliable token-based estimates (marked ≈).
 > Those values must not be interpreted as your account's remaining allowance.
-> The 1.0.2 candidate removes these estimates and queries reported account limits.
+> Version 1.0.3 uses reported account limits and finds the current desktop-bundled Codex.
 
 ## App UI
 
@@ -40,7 +40,7 @@ Features:
 
 ## Install
 
-1. Download the universal **DMG** from the [1.0.2 candidate release](../../releases/tag/v1.0.2).
+1. Download the universal **DMG** from the [latest release](../../releases/latest).
 2. Open it and drag **Token Codex Info** into **Applications**.
 3. Launch the app from **Applications**. The first-launch window checks your local Codex data.
 4. Confirm the detected folder or use **Choose Folder…**, then click **Done**. If no data is available yet, start a Codex session and use **Check Again**.
