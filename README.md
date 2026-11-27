@@ -12,9 +12,14 @@
 </p>
 
 <p align="center">
-  <a href="../../releases/latest"><strong>Download for macOS</strong></a>
+  <a href="../../releases/tag/v1.0.2"><strong>Download 1.0.2 candidate for macOS</strong></a>
   · macOS 14 Sonoma or later · Apple Silicon &amp; Intel
 </p>
+
+> [!WARNING]
+> Versions 1.0.0 and 1.0.1 can show unreliable token-based estimates (marked ≈).
+> Those values must not be interpreted as your account's remaining allowance.
+> The 1.0.2 candidate removes these estimates and queries reported account limits.
 
 ## App UI
 
@@ -30,11 +35,12 @@ Features:
 - first-launch data and access checks, a folder picker, and Data & Settings in the menu;
 - manual Refresh, Launch at Login, and Quit in a compact dropdown;
 - native macOS app with no Dock icon or extra window to keep open;
-- local data only: no API key, account sign-in, or network requests from the app.
+- reported account limits through the installed Codex app server, using your existing Codex sign-in;
+- no API key bundled, no token-based quota estimates, and no third-party backend.
 
 ## Install
 
-1. Download the universal **DMG** from [Releases](../../releases/latest).
+1. Download the universal **DMG** from the [1.0.2 candidate release](../../releases/tag/v1.0.2).
 2. Open it and drag **Token Codex Info** into **Applications**.
 3. Launch the app from **Applications**. The first-launch window checks your local Codex data.
 4. Confirm the detected folder or use **Choose Folder…**, then click **Done**. If no data is available yet, start a Codex session and use **Check Again**.
@@ -52,29 +58,39 @@ The current build is ad-hoc signed and has not been notarized by Apple. If macOS
 | --- | --- |
 | `83% · 2:14` | 83% of the reported five-hour allowance remains; it resets in 2 hours 14 minutes. |
 | `88% · 28 Nov` | 88% of the weekly allowance remains; it resets on 28 November. |
-| `≈83% · 2:14` | An estimate from local token activity, rather than reported account limits. |
 | `Codex · Checking` | The app is checking the selected folder. |
 | `Codex · Setup` | The selected data folder is missing or is not a folder. |
-| `Codex · No data` | The folder is readable, but no usable usage records were found. |
+| `Codex · No limits` | No current reported account limits are available. No percentage is substituted. |
+| `Codex · Offline` | Codex could not refresh account limits; check its sign-in and connection. |
 | `Codex · No access` | The folder or its usage files could not be read because access was denied. |
 | `Codex · Read error` | The usage files could not be read, for example because a database is damaged. |
 | `--` after a percentage | Usage is available, but the reset time is not. |
 
-Missing data is never displayed as a full allowance. Expired snapshots do not automatically become `100%`; the app uses a valid remaining window, a marked estimate, or a no-data state.
+Missing data is never displayed as a full allowance. Expired snapshots do not automatically become `100%`; the app uses a valid reported window or an explicit unavailable state.
 
 The app displays **remaining** usage, converted from Codex's reported `used_percent`. If only a weekly window is available, it shows that window automatically.
 
 ## Local Data and Privacy
 
-Token Codex Info reads session files and SQLite databases in `~/.codex` on your Mac, or the folder chosen in Data & Settings. The current non-sandboxed build normally needs no extra macOS permission for the default folder. Choosing a protected or restricted folder may require read access. The app does not ask for Full Disk Access or read `auth.json`. Use Codex on the same Mac to keep those snapshots up to date.
+Token Codex Info first requests `account/rateLimits/read` from the installed
+Codex app server. Codex uses its existing sign-in to contact OpenAI. The utility
+does not parse or export credentials, bundle an API key, start agent turns, or
+send session contents. No third-party backend is involved.
 
-Usage reflects the latest local snapshot and may lag behind your account. When precise rate limits are unavailable, the app can fall back to token-based estimates. It is a convenient indicator, not a billing or account authority.
+Install the Codex desktop app or CLI and sign in on each Mac. The app finds the
+standard desktop, Homebrew, and npm installations automatically. The selected
+Codex data folder (usually `~/.codex`) is passed to that local Codex process.
 
-If **Data & Settings** shows **Estimated usage**, no current reported limits were
-found in the selected folder. Run a prompt in Codex on that Mac, then click
-**Check Again**. Estimates cover local token activity and may miss usage on other
-devices. When activity exists only in the weekly window, the app shows a weekly
-estimate instead of assuming the five-hour allowance is full.
+If no Codex executable is available, the utility can display a reported limit
+snapshot from local session files or the usage log database. **Data & Settings**
+distinguishes **Live limits** from **Reported limits** (a local snapshot). Local
+snapshots update only when Codex writes them and may lag behind your account.
+
+If a live request fails, the app reports the failure. If reported limits are
+missing, it shows **No limits**. It never calculates account percentages or reset
+times from token counts, thread totals, or a guessed plan allowance. Older token
+limit settings are ignored. Open Codex, check its sign-in and connection, then use
+**Check Again**.
 
 Token Codex Info is an independent utility by [vik1eigh](https://github.com/vik1eigh), not affiliated with or endorsed by OpenAI.
 

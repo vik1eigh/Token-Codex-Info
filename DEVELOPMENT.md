@@ -15,10 +15,10 @@ The current build uses an ad-hoc signature and is not notarized by Apple.
 macOS may require you to allow it in **System Settings → Privacy & Security →
 Open Anyway** after the first launch attempt. Only do this for a build you trust.
 
-Use Codex on the same Mac so it can write local usage snapshots. The app reads
-local Codex session files and databases; it does not make network requests or
-require an API key. Usage can lag behind the account until Codex writes a new
-snapshot. Token-based fallbacks are estimates.
+Install and sign in to Codex on each Mac. The utility queries reported account
+limits through the local app server; Codex handles its own authentication and
+network requests. Credentials are not parsed by the utility or bundled with a
+release. No thread or turn is started.
 
 ## What It Shows
 
@@ -38,24 +38,34 @@ Examples:
 
 ## Data Sources
 
-The app reads the most accurate Codex data first:
+`ReportedCodexUsageProvider` first uses `CodexAppServerClient` over stdio:
 
-1. `~/.codex/sessions/**/*.jsonl` `payload.rate_limits` events, with fallback support for older top-level `rate_limits` events.
-2. `~/.codex/logs_2.sqlite` `codex.rate_limits` events.
-3. `post sampling token usage` log estimates.
-4. `~/.codex/state_5.sqlite` thread token estimates if logs are unavailable.
+1. Find the installed desktop or native Codex CLI executable.
+2. Send `initialize`, acknowledge with `initialized`, then call `account/rateLimits/read`.
+3. Prefer `rateLimitsByLimitId.codex` to the backward-compatible single bucket.
+4. Decode reported `usedPercent`, `windowDurationMins`, and `resetsAt` fields.
 
-Session JSONL is preferred because recent Codex usage snapshots are written there with `used_percent` and `resets_at` fields. The parser reads `payload.rate_limits` first, then falls back to the older top-level `rate_limits` object so both current and historical Codex session formats work. SQLite rate-limit matching is intentionally strict so command output, patches, or test fixtures in logs are not mistaken for real Codex events.
+Only quota fields leave the RPC transport. Account IDs, credit details, unrelated
+fields, and raw errors are discarded. There are no credential exports, agent
+turns, workspace requests, app-server stdout/stderr files, or third-party calls.
+The request has a timeout; the temporary app-server process is stopped afterward.
 
-Codex rate-limit snapshots are classified by `window_minutes`, not by the field names `primary` and `secondary`. This matters because newer Codex sessions may report only one window, for example `primary.window_minutes = 10080` with `secondary = null`. In that weekly-only case, the app does not fabricate a missing 5-hour row or show a misleading `100% / --`; it displays the weekly snapshot instead.
+If the executable is missing, `CodexUsageProvider` can read reported snapshots
+from `sessions/**/*.jsonl` (`payload.rate_limits`, or older top-level
+`rate_limits`) and `logs_2.sqlite` (`codex.rate_limits`). A live request failure
+is shown explicitly and never replaced by a local token estimate.
 
-If one session JSONL file cannot be read while Codex is writing it, the provider skips that file and continues looking for the next valid snapshot instead of falling back to empty or estimated data.
+Windows are classified by their actual duration: 300 minutes or 10080 minutes.
+When only a weekly window is reported, its percentage and reset date are shown.
+Expired windows are unavailable. Invalid or unrelated quota buckets do not
+produce an account percentage.
 
-Expired rate-limit windows are not treated as unused. A valid weekly window is used when available; otherwise the provider tries token estimates and then reports that no usage data is available. It never invents a new reset time or a full allowance from an expired snapshot.
-
-Token estimates also require activity within the selected window. If local activity
-exists only in the weekly window, the app shows that weekly estimate and its date,
-instead of fabricating a full five-hour allowance with an unknown reset.
+Token-based quota estimates were removed in the 1.0.2 candidate. Version 1.0.1
+incorrectly displayed a weekly token estimate when five-hour activity was absent;
+large historical thread totals could then imply an exhausted quota. Token counts
+cannot establish an account allowance or an actual reset time. Tests cover zero,
+large and old token activity without reported limits, account RPC failures,
+expiry, bucket selection, timeout, and response-field filtering.
 
 The first read runs in the background. While it is in progress, the menu shows `Codex · Checking`. The first-launch window reports folder access, allows folder selection, and can be reopened from Data & Settings. Changing settings discards any in-flight result for the previous configuration.
 
