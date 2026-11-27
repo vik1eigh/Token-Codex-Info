@@ -1,3 +1,4 @@
+
 import AppKit
 import SwiftUI
 import TokenCodexInfoCore
@@ -21,7 +22,10 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 7) {
                 Text(settings.hasCompletedSetup ? "Codex Data & Settings" : "Connect your Codex data")
                     .font(.title2.weight(.semibold))
-                Text("Read usage from Codex on this Mac. No API key or sign-in is needed.")
+                Text("Read reported limits through Codex on this Mac. Uses your existing Codex sign-in; no API key is bundled.")
+                    .foregroundStyle(.secondary)
+                Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "development")")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
@@ -84,23 +88,11 @@ struct SettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            DisclosureGroup("Token estimates & refresh") {
+            DisclosureGroup("Refresh") {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("These token limits are used only for approximate usage when Codex does not report its limits. Estimates are marked ≈ in the menu bar.")
+                    Text("Only reported account limits are shown. Missing limits are never estimated from local token activity.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
-                    HStack {
-                        Text("5-hour token limit")
-                        Spacer()
-                        TextField("5-hour token limit", value: $settings.fiveHourTokenLimit, format: .number)
-                            .textFieldStyle(.roundedBorder).frame(width: 140)
-                    }
-                    HStack {
-                        Text("Weekly token limit")
-                        Spacer()
-                        TextField("Weekly token limit", value: $settings.weeklyTokenLimit, format: .number)
-                            .textFieldStyle(.roundedBorder).frame(width: 140)
-                    }
                     Stepper("Refresh every \(settings.refreshIntervalSeconds) seconds", value: $settings.refreshIntervalSeconds, in: 15...600, step: 15)
                 }
                 .padding(.top, 10)
