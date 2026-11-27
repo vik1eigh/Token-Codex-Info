@@ -21,8 +21,11 @@ public struct SQLiteCommandClient: SQLiteQuerying, Sendable {
         let temporaryDirectory = FileManager.default.temporaryDirectory
         let outputURL = temporaryDirectory.appendingPathComponent("TokenCodexInfo-\(UUID().uuidString).sqlite.stdout")
         let errorURL = temporaryDirectory.appendingPathComponent("TokenCodexInfo-\(UUID().uuidString).sqlite.stderr")
-        FileManager.default.createFile(atPath: outputURL.path, contents: nil)
-        FileManager.default.createFile(atPath: errorURL.path, contents: nil)
+        // Usage and SQLite errors can include private local data. Do not expose
+        // temporary query output to other accounts on a shared Mac.
+        let privateAttributes: [FileAttributeKey: Any] = [.posixPermissions: 0o600]
+        FileManager.default.createFile(atPath: outputURL.path, contents: nil, attributes: privateAttributes)
+        FileManager.default.createFile(atPath: errorURL.path, contents: nil, attributes: privateAttributes)
         defer {
             try? FileManager.default.removeItem(at: outputURL)
             try? FileManager.default.removeItem(at: errorURL)

@@ -296,7 +296,11 @@ public final class CodexUsageProvider: UsageProviding, @unchecked Sendable {
             weeklyResetAt: weeklyResetAt,
             observedAt: now,
             source: source,
-            errorMessage: errorMessage
+            errorMessage: errorMessage,
+            // Older weekly activity says nothing about the current five-hour
+            // allowance. Let the UI use the weekly estimate in that case.
+            fiveHourIsAvailable: !fiveHourEvents.isEmpty,
+            weeklyIsAvailable: true
         )
     }
 }
