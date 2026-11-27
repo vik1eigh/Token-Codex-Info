@@ -89,48 +89,31 @@ final class CodexUsageProviderTests: XCTestCase {
         XCTAssertFalse(snapshot.hasData)
     }
 
-    func testRealZeroTokenActivityIsAnEstimateRatherThanMissingData() throws {
+    func testZeroTokensDoNotImplyAFullAccountAllowance() throws {
         let home = try TemporaryCodexHome()
         try home.createLogsDatabase(rows: [(19_000, "post sampling token usage turn_id=turn-a total_usage_tokens=0")])
-        let now = Date(timeIntervalSince1970: 20_000)
-        let snapshot = CodexUsageProvider().loadUsage(settings: settings(home), now: now)
-        XCTAssertEqual(snapshot.source, .logs)
-        XCTAssertTrue(snapshot.hasData)
-        XCTAssertTrue(snapshot.menuBarTitleParts(now: now).stringValue.hasPrefix("≈100%"))
+        let snapshot = CodexUsageProvider().loadUsage(settings: settings(home), now: Date(timeIntervalSince1970: 20_000))
+        XCTAssertFalse(snapshot.hasData)
+        XCTAssertEqual(snapshot.menuBarTitleParts(now: Date()).stringValue, "Codex · No limits")
     }
 
-    func testOlderLogActivityDoesNotInventAFullFiveHourAllowance() throws {
+    func testOlderLogActivityCannotDetermineAccountAllowance() throws {
         let home = try TemporaryCodexHome()
-        let now = Date(timeIntervalSince1970: 100_000)
-        try home.createLogsDatabase(rows: [
-            (80_000, "post sampling token usage turn_id=older-turn total_usage_tokens=400")
-        ])
-
-        let snapshot = CodexUsageProvider().loadUsage(settings: settings(home), now: now)
-
-        XCTAssertEqual(snapshot.source, .logs)
-        XCTAssertFalse(snapshot.fiveHour.isAvailable)
-        XCTAssertTrue(snapshot.weekly.isAvailable)
-        XCTAssertEqual(snapshot.menuBarWindowName, "weekly")
-        XCTAssertEqual(snapshot.menuBarWindow.remainingPercent, 80)
-        XCTAssertEqual(snapshot.menuBarWindow.resetAt, Date(timeIntervalSince1970: 684_800))
-        XCTAssertTrue(snapshot.menuBarTitleParts(now: now).stringValue.hasPrefix("≈80%"))
-        XCTAssertFalse(snapshot.menuBarTitleParts(now: now).stringValue.contains("--"))
+        try home.createLogsDatabase(rows: [(80_000, "post sampling token usage turn_id=older-turn total_usage_tokens=400")])
+        let snapshot = CodexUsageProvider().loadUsage(settings: settings(home), now: Date(timeIntervalSince1970: 100_000))
+        XCTAssertFalse(snapshot.hasData)
+        XCTAssertEqual(snapshot.source, .unavailable)
+        XCTAssertFalse(snapshot.menuBarTitleParts(now: Date()).stringValue.contains("%"))
     }
 
-    func testOlderThreadActivityDoesNotInventAFullFiveHourAllowance() throws {
+    func testLargeHistoricalThreadCountsDoNotImplyAnExhaustedQuota() throws {
         let home = try TemporaryCodexHome()
-        let now = Date(timeIntervalSince1970: 100_000)
-        try home.createStateDatabase(rows: [(80_000, 0, 400)])
-
-        let snapshot = CodexUsageProvider().loadUsage(settings: settings(home), now: now)
-
-        XCTAssertEqual(snapshot.source, .threadsEstimate)
-        XCTAssertFalse(snapshot.fiveHour.isAvailable)
-        XCTAssertTrue(snapshot.weekly.isAvailable)
-        XCTAssertEqual(snapshot.menuBarWindowName, "weekly")
-        XCTAssertEqual(snapshot.menuBarWindow.remainingPercent, 80)
-        XCTAssertEqual(snapshot.menuBarWindow.resetAt, Date(timeIntervalSince1970: 684_800))
+        try home.createStateDatabase(rows: [(80_000, 0, 9_000_000)])
+        let snapshot = CodexUsageProvider().loadUsage(settings: settings(home), now: Date(timeIntervalSince1970: 100_000))
+        XCTAssertFalse(snapshot.hasData)
+        XCTAssertEqual(snapshot.menuBarTitleParts(now: Date()).stringValue, "Codex · No limits")
+        XCTAssertNil(snapshot.resetAt)
+        XCTAssertNil(snapshot.weekly.resetAt)
     }
 
     func testUsesPayloadCodexSessionRateLimitsBeforeSQLiteEstimates() throws {
@@ -283,31 +266,13 @@ final class CodexUsageProviderTests: XCTestCase {
         XCTAssertEqual(snapshot.menuBarWindow.remainingPercent, 95)
     }
 
-    func testParsesLogsAndDeduplicatesLatestTurnUsage() throws {
-        let codexHome = try TemporaryCodexHome()
-        let now = Date(timeIntervalSince1970: 20_000)
-
-        try codexHome.createLogsDatabase(rows: [
-            (1_000, "post sampling token usage turn_id=old-turn total_usage_tokens=999"),
-            (9_000, "post sampling token usage turn_id=turn-a total_usage_tokens=100"),
-            (9_100, "post sampling token usage turn_id=turn-a total_usage_tokens=140"),
-            (9_200, "post sampling token usage turn_id=turn-b total_usage_tokens=60"),
-            (9_300, "something else turn_id=turn-c total_usage_tokens=800")
-        ])
-
-        let provider = CodexUsageProvider()
-        let snapshot = provider.loadUsage(
-            settings: UsageSettings(codexHomePath: codexHome.url.path, fiveHourTokenLimit: 200, weeklyTokenLimit: 2_000, refreshIntervalSeconds: 60),
-            now: now
-        )
-
-        XCTAssertEqual(snapshot.source, .logs)
-        XCTAssertEqual(snapshot.usedTokens, 200)
-        XCTAssertEqual(snapshot.remainingPercent, 0)
-        XCTAssertEqual(snapshot.resetAt, Date(timeIntervalSince1970: 9_100 + 5 * 60 * 60))
-        XCTAssertEqual(snapshot.weekly.usedTokens, 1_199)
-        XCTAssertEqual(snapshot.weekly.remainingPercent, 40)
-        XCTAssertEqual(snapshot.weekly.resetAt, Date(timeIntervalSince1970: 1_000 + 7 * 24 * 60 * 60))
+    func testRecentTokenLogsDoNotBecomeAnAccountPercentage() throws {
+        let home = try TemporaryCodexHome()
+        try home.createLogsDatabase(rows: [(19_000, "post sampling token usage turn_id=recent-turn total_usage_tokens=9000000")])
+        let snapshot = CodexUsageProvider().loadUsage(settings: settings(home), now: Date(timeIntervalSince1970: 20_000))
+        XCTAssertFalse(snapshot.hasData)
+        XCTAssertFalse(snapshot.menuBarTitleParts(now: Date()).stringValue.contains("%"))
+        XCTAssertNil(snapshot.resetAt)
     }
 
     func testReadableLogsWithNoRowsReportsNoDataInsteadOfFullAllowance() throws {
@@ -324,32 +289,21 @@ final class CodexUsageProviderTests: XCTestCase {
         XCTAssertEqual(snapshot.source, .unavailable)
         XCTAssertEqual(snapshot.issue, .noUsageData)
         XCTAssertFalse(snapshot.hasData)
-        XCTAssertEqual(snapshot.menuBarTitleParts(now: now).stringValue, "Codex · No data")
+        XCTAssertEqual(snapshot.menuBarTitleParts(now: now).stringValue, "Codex · No limits")
     }
 
-    func testFallsBackToThreadEstimateWhenLogsAreUnavailable() throws {
-        let codexHome = try TemporaryCodexHome()
-        let now = Date(timeIntervalSince1970: 20_000)
-        try codexHome.createStateDatabase(rows: [
-            (1_000, 0, 300),
-            (9_000, 0, 40),
-            (9_500, 0, 60)
+    func testExpiredReportedWindowsNeverFallBackToTokenEstimates() throws {
+        let home = try TemporaryCodexHome()
+        try home.createStateDatabase(rows: [(19_000, 0, 9_000_000)])
+        try home.createSessionLog(lines: [
+            #"{"payload":{"rate_limits":{"primary":{"used_percent":50,"window_minutes":10080,"resets_at":19999}}}}"#
         ])
-
-        let provider = CodexUsageProvider()
-        let snapshot = provider.loadUsage(
-            settings: UsageSettings(codexHomePath: codexHome.url.path, fiveHourTokenLimit: 200, weeklyTokenLimit: 1_000, refreshIntervalSeconds: 60),
-            now: now
-        )
-
-        XCTAssertEqual(snapshot.source, .threadsEstimate)
-        XCTAssertEqual(snapshot.usedTokens, 100)
-        XCTAssertEqual(snapshot.rawPercent, 50)
-        XCTAssertEqual(snapshot.remainingPercent, 50)
-        XCTAssertEqual(snapshot.weekly.usedTokens, 400)
-        XCTAssertEqual(snapshot.weekly.remainingPercent, 60)
-        XCTAssertEqual(snapshot.errorMessage, "Using thread estimate; logs unavailable.")
+        let snapshot = CodexUsageProvider().loadUsage(settings: settings(home), now: Date(timeIntervalSince1970: 20_000))
+        XCTAssertFalse(snapshot.hasData)
+        XCTAssertEqual(snapshot.source, .unavailable)
+        XCTAssertFalse(snapshot.menuBarTitleParts(now: Date()).stringValue.contains("%"))
     }
+
 }
 
 private struct DeniedFolderChecker: CodexFolderChecking {

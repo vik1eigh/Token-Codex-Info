@@ -8,7 +8,7 @@ final class UsageSnapshotTests: XCTestCase {
             limitTokens: 200,
             resetAt: nil,
             observedAt: Date(timeIntervalSince1970: 0),
-            source: .logs
+            source: .rateLimits
         )
 
         XCTAssertEqual(snapshot.rawPercent, 150)
@@ -30,20 +30,20 @@ final class UsageSnapshotTests: XCTestCase {
         XCTAssertFalse(snapshot.hasData)
         XCTAssertFalse(snapshot.fiveHour.isAvailable)
         XCTAssertFalse(snapshot.weekly.isAvailable)
-        XCTAssertEqual(snapshot.menuBarTitleParts(now: Date()).stringValue, "Codex · No data")
+        XCTAssertEqual(snapshot.menuBarTitleParts(now: Date()).stringValue, "Codex · No limits")
         XCTAssertFalse(snapshot.menuBarAccessibilityTitle(now: Date()).contains("100%"))
     }
 
-    func testBothTokenSourcesAreVisiblyEstimates() {
+    func testLegacyTokenEstimatesAreNeverDisplayedAsAccountLimits() {
         let now = Date()
         for source in [UsageDataSource.logs, .threadsEstimate] {
-            let snapshot = UsageSnapshot(usedTokens: 17, limitTokens: 100, resetAt: nil, observedAt: now, source: source)
-            XCTAssertTrue(source.isEstimate)
-            XCTAssertEqual(snapshot.menuBarTitleParts(now: now).stringValue, "≈83% · --")
-            XCTAssertEqual(snapshot.statusTitle, "Estimated usage")
-            XCTAssertTrue(snapshot.menuBarAccessibilityTitle(now: now).hasPrefix("Estimated:"))
+            for tokens in [0, 9000000] {
+                let snapshot = UsageSnapshot(usedTokens: tokens, limitTokens: 100, resetAt: now.addingTimeInterval(3600), observedAt: now, source: source)
+                XCTAssertFalse(snapshot.hasData)
+                XCTAssertEqual(snapshot.menuBarTitleParts(now: now).stringValue, "Codex · No limits")
+                XCTAssertFalse(snapshot.menuBarAccessibilityTitle(now: now).contains("%"))
+            }
         }
-        XCTAssertFalse(UsageDataSource.unavailable.isEstimate)
     }
 
     func testReportedUnusedWindowCanStillShowFullAllowance() {
@@ -56,7 +56,8 @@ final class UsageSnapshotTests: XCTestCase {
     func testUnavailableStatesNeverShowAPercentage() {
         let cases: [(CodexDataIssue, String)] = [
             (.checking, "Checking"), (.folderMissing, "Setup"), (.notDirectory, "Setup"),
-            (.accessDenied, "No access"), (.noUsageData, "No data"), (.readFailed, "Read error")
+            (.accessDenied, "No access"), (.noUsageData, "No limits"), (.readFailed, "Read error"),
+            (.codexUnavailable, "Setup"), (.liveRequestFailed, "Offline")
         ]
         for (issue, label) in cases {
             let snapshot = UsageSnapshot.empty(limitTokens: 100, now: Date(), issue: issue)
@@ -71,7 +72,7 @@ final class UsageSnapshotTests: XCTestCase {
             limitTokens: 200,
             resetAt: nil,
             observedAt: Date(timeIntervalSince1970: 0),
-            source: .logs
+            source: .rateLimits
         )
 
         XCTAssertEqual(snapshot.rawPercent, 25)
@@ -87,7 +88,7 @@ final class UsageSnapshotTests: XCTestCase {
             weeklyLimitTokens: 1_000,
             weeklyResetAt: nil,
             observedAt: Date(timeIntervalSince1970: 0),
-            source: .logs
+            source: .rateLimits
         )
 
         XCTAssertEqual(snapshot.remainingPercent, 75)
