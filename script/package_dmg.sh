@@ -4,7 +4,7 @@ set -euo pipefail
 EXECUTABLE_NAME="TokenCodexInfo"
 APP_DISPLAY_NAME="Token Codex Info"
 BUNDLE_ID="com.vibecode.TokenCodexInfo"
-VERSION="${VERSION:-1.0.0}"
+VERSION="${VERSION:-1.0.3}"
 BUILD_NUMBER="${BUILD_NUMBER:-1}"
 MIN_SYSTEM_VERSION="14.0"
 
