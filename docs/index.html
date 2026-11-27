@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -33,7 +34,7 @@
         <span class="preview-label">Illustrative preview</span>
       </div>
     </section>
-    <div class="benefit-strip wrap"><p>Built for the menu bar.</p><p>Reads local Codex data.</p><p>No API key needed.</p></div>
+    <div class="benefit-strip wrap"><p>Built for the menu bar.</p><p>Reported limits only.</p><p>No API key needed.</p></div>
     <section id="how-it-works" class="details wrap" aria-labelledby="details-title">
       <div><p class="eyebrow">LESS CHECKING. MORE CREATING.</p><h2 id="details-title">Know where<br>you stand.</h2><p class="section-intro">A quiet companion for your Codex sessions. The information you need, in the corner of your screen.</p></div>
       <div class="feature-list">
@@ -55,8 +56,8 @@
       </div>
     </section>
     <section class="practical wrap" aria-labelledby="practical-title"><div><p class="eyebrow">GOOD TO KNOW</p><h2 id="practical-title">Small app.<br>Clear expectations.</h2></div><div class="faq">
-      <details open><summary>Where does the usage data come from?</summary><p>The app reads Codex session files and databases already on your Mac. It does not make network requests or ask for an API key. Use Codex on the same Mac to keep those snapshots up to date.</p></details>
-      <details><summary>Is the usage always live?</summary><p>Usage updates when Codex writes a new local snapshot. If precise limits are unavailable, the app may fall back to token-based estimates. Estimates are marked ≈. If data is missing or access is denied, the app shows a clear status instead of 100%. Open Data &amp; Settings to choose a folder or check again.</p></details>
+      <details open><summary>Where does the usage data come from?</summary><p>The app requests reported limits through the installed Codex app server. Codex uses its existing sign-in to contact OpenAI. No API key is bundled and no third-party backend is involved. Install and sign in to Codex on each Mac.</p></details>
+      <details><summary>Is the usage always live?</summary><p>Live limits are fetched from your account through Codex. If the executable is unavailable, a reported local snapshot may be used and is identified in Data &amp; Settings. Missing limits and failed requests show a clear status. Token counts are never converted into an account percentage. Versions 1.0.0 and 1.0.1 used unreliable estimates; the 1.0.2 candidate removes them.</p></details>
       <details><summary>What if macOS asks for permission to open it?</summary><p>The current build is ad-hoc signed and has not been notarized by Apple. After trying to open a build you trust, go to System Settings → Privacy &amp; Security and choose Open Anyway if offered. No security settings need to be disabled.</p></details>
       <details><summary>Is this an official OpenAI app?</summary><p>No. Token Codex Info is an independent utility by vik1eigh. It is not affiliated with or endorsed by OpenAI.</p></details>
     </div></section>
