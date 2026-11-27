@@ -70,6 +70,12 @@ Token Codex Info reads session files and SQLite databases in `~/.codex` on your 
 
 Usage reflects the latest local snapshot and may lag behind your account. When precise rate limits are unavailable, the app can fall back to token-based estimates. It is a convenient indicator, not a billing or account authority.
 
+If **Data & Settings** shows **Estimated usage**, no current reported limits were
+found in the selected folder. Run a prompt in Codex on that Mac, then click
+**Check Again**. Estimates cover local token activity and may miss usage on other
+devices. When activity exists only in the weekly window, the app shows a weekly
+estimate instead of assuming the five-hour allowance is full.
+
 Token Codex Info is an independent utility by [vik1eigh](https://github.com/vik1eigh), not affiliated with or endorsed by OpenAI.
 
 ## Build from Source

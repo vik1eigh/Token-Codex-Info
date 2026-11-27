@@ -53,9 +53,16 @@ If one session JSONL file cannot be read while Codex is writing it, the provider
 
 Expired rate-limit windows are not treated as unused. A valid weekly window is used when available; otherwise the provider tries token estimates and then reports that no usage data is available. It never invents a new reset time or a full allowance from an expired snapshot.
 
+Token estimates also require activity within the selected window. If local activity
+exists only in the weekly window, the app shows that weekly estimate and its date,
+instead of fabricating a full five-hour allowance with an unknown reset.
+
 The first read runs in the background. While it is in progress, the menu shows `Codex · Checking`. The first-launch window reports folder access, allows folder selection, and can be reopened from Data & Settings. Changing settings discards any in-flight result for the previous configuration.
 
 SQLite reads are executed through `/usr/bin/sqlite3` with a timeout and temporary output files. This avoids pipe deadlocks on large log queries and keeps the manual Refresh action from getting stuck in `Refreshing...`.
+
+Temporary query output and errors are created with owner-only permissions (`0600`)
+and removed after the query completes.
 
 ## Display Notes
 
